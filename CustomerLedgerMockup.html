@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Customer ledger | Concept</title>
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #172e43;
+      background: #f3f6f9;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #2577bc; outline-offset: 3px; }
+    [hidden] { display: none !important; }
+
+    .page { max-width: 1240px; margin: 0 auto; padding: 44px 28px 80px; }
+    .eyebrow { margin: 0 0 12px; color: #34769f; font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    .heading { display: flex; justify-content: space-between; align-items: start; gap: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 38px); letter-spacing: -.035em; }
+    .intro { margin: 0; color: #60778a; line-height: 1.5; }
+    .concept-tag { flex-shrink: 0; padding: 8px 12px; border: 1px solid #bad8e8; border-radius: 6px; background: #e8f5fb; color: #286384; font-size: 12px; font-weight: 700; }
+
+    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 30px 0; }
+    .stat { padding: 20px 22px; border: 1px solid #e1eaf0; border-radius: 9px; background: #fff; box-shadow: 0 2px 8px #1e40520a; }
+    .stat::before { content: ""; display: block; width: 25px; height: 3px; margin-bottom: 19px; border-radius: 4px; background: #8fb6ce; }
+    .stat.outstanding::before { background: #d88b59; }
+    .stat.unapplied::before { background: #6b9f8a; }
+    .stat-label { display: block; color: #60778a; font-size: 13px; }
+    .stat-value { display: block; margin: 8px 0 5px; font-size: clamp(20px, 2.3vw, 27px); font-weight: 700; letter-spacing: -.035em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .stat-hint { color: #79909f; font-size: 12px; }
+
+    .ledger { overflow: hidden; border: 1px solid #dce7ee; border-radius: 10px; background: #fff; box-shadow: 0 6px 28px #213e510d; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 22px 24px; border-bottom: 1px solid #e4edf2; }
+    .toolbar-title { margin: 0 0 4px; font-size: 18px; }
+    .toolbar-note { margin: 0; color: #60778a; font-size: 13px; line-height: 1.4; }
+    .controls { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+    .segmented { display: inline-flex; gap: 3px; padding: 4px; border: 1px solid #d8e5ed; border-radius: 7px; background: #f3f7fa; }
+    .segmented button { padding: 8px 13px; border: 0; border-radius: 5px; background: transparent; color: #4d687c; font-size: 13px; font-weight: 600; }
+    .segmented button[aria-pressed="true"] { background: #fff; color: #17669c; box-shadow: 0 1px 5px #1e405229; }
+    .filter { display: inline-flex; align-items: center; gap: 9px; color: #345066; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .filter input { width: 17px; height: 17px; margin: 0; accent-color: #176da5; cursor: pointer; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+    .main-table { min-width: 770px; }
+    .main-table > thead > tr > th { padding: 14px 16px; border-bottom: 1px solid #dde7ec; color: #637c8d; background: #f8fafb; font-size: 11px; font-weight: 700; letter-spacing: .045em; text-align: left; text-transform: uppercase; }
+    .main-table > thead > tr > th:first-child { width: 29%; padding-left: 24px; }
+    .main-table > thead > tr > th:nth-child(2) { width: 16%; }
+    .main-table > thead > tr > th:nth-child(3) { width: 13%; }
+    .main-table > thead > tr > th:nth-child(4), .main-table > thead > tr > th:nth-child(5), .main-table > thead > tr > th:nth-child(6) { width: 14%; }
+    .main-table > thead > tr > th.number { text-align: right; }
+    .main-table > tbody > .main-row > td { padding: 16px; border-bottom: 1px solid #dcecf4; background: #edf8fd; vertical-align: middle; }
+    .main-table > tbody > .main-row > td:first-child { padding-left: 24px; }
+    .main-table > tbody > .main-row:nth-of-type(4n + 3) > td { background: #f4faff; }
+    .main-table > tbody > .main-row.open > td { background: #e1f3fb; }
+    .row-button { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 0; border: 0; background: none; color: #155d8b; font-weight: 700; text-align: left; }
+    .row-button:hover .row-name { text-decoration: underline; }
+    .chevron { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 21px; width: 21px; height: 21px; border: 1px solid #b2d5e7; border-radius: 5px; background: #fff; color: #2876a3; font-size: 12px; line-height: 1; }
+    .row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .secondary { display: block; margin: 5px 0 0 31px; color: #68839a; font-size: 11px; }
+    .type { color: #375b72; }
+    .date { color: #526e82; }
+    .number { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .remaining { color: #aa542d; font-weight: 700; }
+    .settled { color: #36735d; font-weight: 700; }
+    .detail-row > td { padding: 0 16px 16px 55px; border-bottom: 1px solid #dbe6ec; background: #fff; }
+    .detail-panel { padding: 13px 18px 8px; border: 1px solid #e0e5e9; border-top: 0; border-radius: 0 0 6px 6px; background: #f1f3f5; }
+    .detail-heading { margin: 0 0 10px; color: #516879; font-size: 12px; font-weight: 700; }
+    .detail-table { table-layout: auto; }
+    .detail-table th { padding: 6px 10px; border-bottom: 1px solid #dce2e6; color: #73818b; background: transparent; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
+    .detail-table td { padding: 11px 10px; border-bottom: 1px solid #e1e5e8; background: transparent !important; color: #415869; }
+    .detail-table tr:last-child td { border-bottom: 0; }
+    .detail-table th:last-child, .detail-table td:last-child { text-align: right; }
+    .detail-table .detail-name { color: #234f6c; font-weight: 600; }
+    .empty-detail { margin: 0; padding: 12px 10px 18px; color: #677986; font-size: 13px; }
+    .footnote { margin: 0; padding: 15px 24px; border-top: 1px solid #e4edf2; color: #718899; font-size: 12px; line-height: 1.5; }
+
+    @media (max-width: 880px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .toolbar { align-items: start; }
+    }
+    @media (max-width: 540px) {
+      .page { padding: 26px 14px 50px; }
+      .heading { display: block; }
+      .concept-tag { display: inline-block; margin-top: 15px; }
+      .summary { gap: 9px; margin: 22px 0; }
+      .stat { padding: 14px; }
+      .stat-value { font-size: 21px; }
+      .toolbar { padding: 18px; }
+      .controls { gap: 12px; }
+      .footnote { padding: 15px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <p class="eyebrow">Customer / ledger</p>
+    <div class="heading">
+      <div>
+        <h1>Customer ledger</h1>
+        <p class="intro">See what is owed, and how each payment was allocated.</p>
+      </div>
+      <span class="concept-tag">Interactive concept | Sample data</span>
+    </div>
+
+    <section class="summary" aria-label="Ledger summary">
+      <div class="stat"><span class="stat-label">Total charges</span><strong class="stat-value" id="total-charges"></strong><span class="stat-hint">Invoices and fees</span></div>
+      <div class="stat"><span class="stat-label">Applied payments</span><strong class="stat-value" id="total-applied"></strong><span class="stat-hint">Allocated to entries</span></div>
+      <div class="stat outstanding"><span class="stat-label">Outstanding</span><strong class="stat-value" id="total-outstanding"></strong><span class="stat-hint">Still due on entries</span></div>
+      <div class="stat unapplied"><span class="stat-label">Unapplied funds</span><strong class="stat-value" id="total-unapplied"></strong><span class="stat-hint">Received but not allocated</span></div>
+    </section>
+
+    <section class="ledger" aria-label="Ledger transactions">
+      <div class="toolbar">
+        <div>
+          <h2 class="toolbar-title">Transactions</h2>
+          <p class="toolbar-note" id="view-description"></p>
+        </div>
+        <div class="controls">
+          <div class="segmented" role="group" aria-label="Group ledger by">
+            <button type="button" data-view="entries" aria-pressed="true">Entries</button>
+            <button type="button" data-view="payments" aria-pressed="false">Payments</button>
+          </div>
+          <label class="filter"><input type="checkbox" id="open-only"> Open only</label>
+        </div>
+      </div>
+      <div class="table-scroll" role="region" aria-label="Scrollable ledger table" tabindex="0">
+        <table class="main-table">
+          <thead><tr><th scope="col" id="reference-label">Entry / reference</th><th scope="col">Type</th><th scope="col">Date</th><th scope="col" class="number">Amount (DKK)</th><th scope="col" class="number">Applied (DKK)</th><th scope="col" class="number" id="remaining-label">Remaining (DKK)</th></tr></thead>
+          <tbody id="ledger-rows"></tbody>
+        </table>
+      </div>
+      <p class="footnote">Concept only. Totals cover all sample transactions, regardless of the filter. Amounts and allocations are illustrative; no live ledger or documents are connected.</p>
+    </section>
+  </main>
+
+  <script>
+    // Allocations connect a payment to a target entry; both views use the same records.
+    const entries = [
+      { id: 'INV-1042', name: 'Invoice 1042', type: 'Invoice', date: '18/09/2026', amount: 10000 },
+      { id: 'INV-1038', name: 'Invoice 1038', type: 'Invoice', date: '02/09/2026', amount: 6400 },
+      { id: 'FEE-12', name: 'Reminder fee 12', type: 'Fee', date: '28/08/2026', amount: 300 },
+      { id: 'INV-1031', name: 'Invoice 1031', type: 'Invoice', date: '12/08/2026', amount: 2750 },
+    ];
+    const payments = [
+      { id: 'PAY-2080', name: 'Payment 2080', type: 'Payment', date: '23/09/2026', amount: 900 },
+      { id: 'PAY-2072', name: 'Payment 2072', type: 'Payment', date: '20/09/2026', amount: 3400 },
+      { id: 'PAY-2071', name: 'Payment 2071', type: 'Payment', date: '19/09/2026', amount: 1100 },
+      { id: 'PAY-2060', name: 'Payment 2060', type: 'Payment', date: '10/09/2026', amount: 4000 },
+      { id: 'PAY-2050', name: 'Payment 2050', type: 'Payment', date: '16/08/2026', amount: 1250 },
+    ];
+    const allocations = [
+      { entryId: 'INV-1042', paymentId: 'PAY-2071', amount: 1000 },
+      { entryId: 'INV-1042', paymentId: 'PAY-2072', amount: 1000 },
+      { entryId: 'INV-1038', paymentId: 'PAY-2060', amount: 4000 },
+      { entryId: 'INV-1038', paymentId: 'PAY-2072', amount: 2400 },
+      { entryId: 'FEE-12', paymentId: 'PAY-2071', amount: 100 },
+      { entryId: 'INV-1031', paymentId: 'PAY-2050', amount: 1250 },
+    ];
+
+    const formatAmount = amount => new Intl.NumberFormat('da-DK').format(amount);
+    const totalApplied = allocations.reduce((sum, allocation) => sum + allocation.amount, 0);
+    const totalCharges = entries.reduce((sum, entry) => sum + entry.amount, 0);
+    const totalReceived = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    document.getElementById('total-charges').textContent = `${formatAmount(totalCharges)} kr.`;
+    document.getElementById('total-applied').textContent = `${formatAmount(totalApplied)} kr.`;
+    document.getElementById('total-outstanding').textContent = `${formatAmount(totalCharges - totalApplied)} kr.`;
+    document.getElementById('total-unapplied').textContent = `${formatAmount(totalReceived - totalApplied)} kr.`;
+
+    const tbody = document.getElementById('ledger-rows');
+    const filter = document.getElementById('open-only');
+    let view = 'entries';
+
+    function render() {
+      const showingEntries = view === 'entries';
+      const records = showingEntries ? entries : payments;
+      const relatedRecords = showingEntries ? payments : entries;
+      document.getElementById('reference-label').textContent = showingEntries ? 'Entry / reference' : 'Payment / reference';
+      document.getElementById('remaining-label').textContent = showingEntries ? 'Remaining (DKK)' : 'Unapplied (DKK)';
+      document.getElementById('view-description').textContent = showingEntries
+        ? 'Expand an entry to see its payments. Open only shows entries with a balance due.'
+        : 'Expand a payment to see its target entries. Open only shows payments with unapplied funds.';
+      document.querySelectorAll('[data-view]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.view === view));
+      });
+
+      tbody.replaceChildren();
+      records.forEach(record => {
+        const matches = allocations.filter(allocation => showingEntries
+          ? allocation.entryId === record.id : allocation.paymentId === record.id);
+        const applied = matches.reduce((sum, allocation) => sum + allocation.amount, 0);
+        const remaining = record.amount - applied;
+        if (filter.checked && remaining === 0) return;
+
+        const row = document.createElement('tr');
+        row.className = 'main-row';
+        const nameCell = row.insertCell();
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'row-button';
+        button.setAttribute('aria-expanded', 'false');
+        button.setAttribute('aria-controls', `detail-${record.id}`);
+        const chevron = document.createElement('span');
+        chevron.className = 'chevron';
+        chevron.setAttribute('aria-hidden', 'true');
+        chevron.textContent = '+';
+        const name = document.createElement('span');
+        name.className = 'row-name';
+        name.textContent = record.name;
+        button.append(chevron, name);
+        nameCell.append(button);
+        const reference = document.createElement('span');
+        reference.className = 'secondary';
+        reference.textContent = record.id;
+        nameCell.append(reference);
+        [record.type, record.date, formatAmount(record.amount), formatAmount(applied), formatAmount(remaining)].forEach((value, index) => {
+          const cell = row.insertCell();
+          cell.textContent = value;
+          if (index === 0) cell.className = 'type';
+          if (index === 1) cell.className = 'date';
+          if (index > 1) cell.className = 'number';
+          if (index === 4) cell.classList.add(remaining ? 'remaining' : 'settled');
+        });
+
+        const detailRow = document.createElement('tr');
+        detailRow.className = 'detail-row';
+        detailRow.id = `detail-${record.id}`;
+        detailRow.hidden = true;
+        const detailCell = detailRow.insertCell();
+        detailCell.colSpan = 6;
+        const panel = document.createElement('div');
+        panel.className = 'detail-panel';
+        const heading = document.createElement('p');
+        heading.className = 'detail-heading';
+        heading.textContent = showingEntries ? 'Payments applied to this entry' : 'Entries covered by this payment';
+        panel.append(heading);
+
+        if (matches.length) {
+          const table = document.createElement('table');
+          table.className = 'detail-table';
+          const header = table.createTHead().insertRow();
+          ['Date', 'Reference', 'Type', 'Applied (DKK)'].forEach(label => {
+            const cell = document.createElement('th');
+            cell.scope = 'col';
+            cell.textContent = label;
+            header.append(cell);
+          });
+          const body = table.createTBody();
+          matches.forEach(allocation => {
+            const related = relatedRecords.find(item => item.id === (showingEntries ? allocation.paymentId : allocation.entryId));
+            const detail = body.insertRow();
+            [related.date, related.name, related.type, formatAmount(allocation.amount)].forEach((value, index) => {
+              const cell = detail.insertCell();
+              cell.textContent = value;
+              if (index === 1) cell.className = 'detail-name';
+              if (index === 3) cell.className = 'number';
+            });
+          });
+          panel.append(table);
+        } else {
+          const empty = document.createElement('p');
+          empty.className = 'empty-detail';
+          empty.textContent = 'No entries have been allocated to this payment yet.';
+          panel.append(empty);
+        }
+        detailCell.append(panel);
+        tbody.append(row, detailRow);
+      });
+    }
+
+    tbody.addEventListener('click', event => {
+      const button = event.target.closest('.row-button');
+      if (!button) return;
+      const detailRow = document.getElementById(button.getAttribute('aria-controls'));
+      detailRow.hidden = !detailRow.hidden;
+      button.setAttribute('aria-expanded', String(!detailRow.hidden));
+      button.querySelector('.chevron').textContent = detailRow.hidden ? '+' : '-';
+      button.closest('tr').classList.toggle('open', !detailRow.hidden);
+    });
+    document.querySelectorAll('[data-view]').forEach(button => {
+      button.addEventListener('click', () => {
+        view = button.dataset.view;
+        render();
+      });
+    });
+    filter.addEventListener('change', render);
+    render();
+    // Show an allocation immediately so the parent/detail relationship is visible on first open.
+    tbody.querySelector('.row-button').click();
+  </script>
+</body>
+</html>
